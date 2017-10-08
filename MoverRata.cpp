@@ -33,11 +33,12 @@ public:
 			steering.linear.normalize();
 			steering.linear *= maxAcceleration;
 		}
+		//steering.angular = steering.angular > maxAngular ? maxAngular : steering.angular;
 		return steering;
 	}
 };
 
-class Seek: public SteeringBehavior {
+class Seek : public SteeringBehavior {
 public:
 	cocos2d::Sprite* target;
 	cocos2d::Sprite* character;
@@ -61,7 +62,7 @@ public:
 	}
 };
 
-class Arrive: SteeringBehavior {
+class Arrive : SteeringBehavior {
 public:
 	cocos2d::Sprite* target;
 	cocos2d::Sprite* character;
@@ -86,7 +87,7 @@ public:
 	}
 };
 
-class Flee: public SteeringBehavior {
+class Flee : public SteeringBehavior {
 public:
 	cocos2d::Sprite* target;
 	cocos2d::Sprite* character;
@@ -104,7 +105,7 @@ public:
 	}
 };
 
-class Wander: public SteeringBehavior {
+class Wander : public SteeringBehavior {
 public:
 	cocos2d::Sprite* target;
 	cocos2d::Sprite* character;
@@ -124,7 +125,7 @@ public:
 	}
 };
 
-class SeekD: public SteeringBehavior {
+class SeekD : public SteeringBehavior {
 public:
 	MySprite* target;
 	MySprite* character;
@@ -138,7 +139,11 @@ public:
 	SteeringOutput getSteering() {
 		SteeringOutput steering;
 		steering.linear = -character->sprite->getPosition3D() + target->sprite->getPosition3D();
+		//steering.linear.x = -character->sprite->getPosition().x + target->sprite->getPosition().x;
+		//steering.linear.y = -character->sprite->getPosition().y + target->sprite->getPosition().y;
+		//CCLOG("%f %f %f", character->sprite->getPosition3D().x, character->sprite->getPosition3D().y, character->sprite->getPosition3D().z);
 		//CCLOG("%f %f resta", -character->sprite->getPosition().x + target->sprite->getPosition().x, -character->sprite->getPosition().y + target->sprite->getPosition().y);
+
 		steering.linear.normalize();
 		steering.linear *= character->maxAcceleration;
 		steering.angular = 0;
@@ -147,7 +152,7 @@ public:
 	}
 };
 
-class ArriveD: public SteeringBehavior {
+class ArriveD : public SteeringBehavior {
 public:
 	MySprite* target;
 	MySprite* character;
@@ -189,7 +194,7 @@ public:
 	}
 };
 
-class FleeD: public SteeringBehavior {
+class FleeD : public SteeringBehavior {
 public:
 	MySprite* target;
 	MySprite* character;
@@ -210,7 +215,7 @@ public:
 	}
 };
 
-class Pursue: public SteeringBehavior {
+class Pursue : public SteeringBehavior {
 public:
 	MySprite* target;
 	MySprite* character;
@@ -246,7 +251,7 @@ public:
 	}
 };
 
-class Evade: public SteeringBehavior {
+class Evade : public SteeringBehavior {
 public:
 	MySprite* target;
 	MySprite* character;
@@ -284,7 +289,7 @@ public:
 	}
 };
 
-class Align: public SteeringBehavior {
+class Align : public SteeringBehavior {
 public:
 	MySprite* character;
 	MySprite* target;
@@ -334,13 +339,13 @@ public:
 	}
 };
 
-class Separation: public SteeringBehavior {
+class Separation : public SteeringBehavior {
 public:
 	MySprite* character;
 	std::vector<MySprite*> targets;
-	float decayCoefficient;
-	float threshold;
-	float strength;
+	float decayCoefficient = 20000;
+	float threshold = 80;
+	float strength = 200;
 public:
 	SteeringOutput getSteering() {
 		SteeringOutput steering;
@@ -351,7 +356,9 @@ public:
 			direction.y = targets[i]->sprite->getPosition3D().y - character->sprite->getPosition3D().y;
 			distance = direction.length();
 
+
 			if (distance < threshold) {
+				CCLOG("DISTANCA < TRESH");
 				if (distance != 0) {
 					strength = std::min(-(decayCoefficient / (distance*distance)), character->maxAcceleration);
 				}
@@ -360,6 +367,7 @@ public:
 				}
 			}
 			else {
+				CCLOG("ELSE");
 				steering.angular = 0;
 				continue;
 			}
@@ -377,7 +385,7 @@ public:
 	}
 };
 
-class CollisionAvoidance: public SteeringBehavior {
+class CollisionAvoidance : public SteeringBehavior {
 public:
 	MySprite* character;
 	std::vector<MySprite*> targets;
@@ -399,13 +407,13 @@ public:
 		Vec3 relativePos;
 		Vec3 relativeVel;
 		MySprite* firstTarget;
-		
+
 		for (int i = 0; i < targets.size(); i++) {
 			relativePos.x = targets[i]->sprite->getPosition3D().x - character->sprite->getPosition3D().x;
 			relativePos.y = targets[i]->sprite->getPosition3D().y - character->sprite->getPosition3D().y;
 			relativeVel.x = targets[i]->velocity->x - character->velocity->x;
 			relativeVel.y = targets[i]->velocity->y - character->velocity->y;
-			
+
 			relativeSpeed = relativeVel.length();
 			if (relativeSpeed == 0) {
 				continue;
@@ -414,7 +422,7 @@ public:
 			timeToCollision = abs(relativePos.dot(relativeVel)) / (relativeSpeed * relativeSpeed);
 			distance = relativePos.length();
 			minSeparation = distance - relativeSpeed*timeToCollision;
-			
+
 			if (minSeparation > 2 * radiusColl) {
 				continue;
 			}
@@ -431,8 +439,8 @@ public:
 		}
 
 		if (!eTarget) {
-			//CCLOG("NoExiste");
 			steering.angular = 0;
+			//CCLOG("VAINA");
 			return steering;
 		}
 
@@ -447,11 +455,11 @@ public:
 		relativePos.normalize();
 		steering.linear = -relativePos * character->maxAcceleration;
 		steering.angular = 0;
-		return steering;	
+		return steering;
 	}
 };
 
-class Face: Align {
+class Face : Align {
 public:
 	MySprite* target;
 	MySprite* character;
@@ -461,7 +469,7 @@ public:
 		MySprite * myTarget;
 		Align align;
 
-		myTarget= MySprite::create();
+		myTarget = MySprite::create();
 		myTarget->sprite = Sprite::create();
 		myTarget->sprite->setPosition3D(target->sprite->getPosition3D());
 		myTarget->velocity->set(*target->velocity);
@@ -470,24 +478,24 @@ public:
 
 		direction.x = target->sprite->getPosition3D().x - character->sprite->getPosition3D().x;
 		direction.y = target->sprite->getPosition3D().y - character->sprite->getPosition3D().y;
-		
+
 		align.target = myTarget;
 		align.character = character;
 		align.targetRadius = 1;
 		align.slowRadius = 1;
-		
-		if (direction.length() == 0) {	
+
+		if (direction.length() == 0) {
 			return align.getSteering();
 		}
 
-		myTarget->sprite->setRotation(atan2(direction.x, direction.y) * 180.0/ M_PI);
+		myTarget->sprite->setRotation(atan2(direction.x, direction.y) * 180.0 / M_PI);
 		align.target = myTarget;
-		
+
 		return align.getSteering();
 	}
 };
 
-class LookWhereYoureGoing: public SteeringBehavior {
+class LookWhereYoureGoing : public SteeringBehavior {
 public:
 	MySprite* target;
 	MySprite* character;
@@ -550,7 +558,7 @@ bool MoverRata::init()
 	myS1->acceleration = 20;
 	myS1->maxSpeed = 40;
 	myS1->maxAcceleration = 20;
-	myS1->maxAngular = 30;
+	myS1->maxAngular = 50;
 	myS1->maxRotation = 30;
 	sprite1->setPosition(this->getContentSize().width / 2.5, this->getContentSize().height / 2);
 	this->addChild(sprite1, 0);
@@ -585,7 +593,7 @@ bool MoverRata::init()
 
 	eventListener->onKeyPressed = [](EventKeyboard::KeyCode keyCode, Event* event) {
 		Vec3 loc = event->getCurrentTarget()->getPosition3D();
-		
+
 		switch (keyCode) {
 		case EventKeyboard::KeyCode::KEY_LEFT_ARROW:
 		case EventKeyboard::KeyCode::KEY_A:
@@ -610,7 +618,7 @@ bool MoverRata::init()
 			}
 		}
 	};
-	
+
 	this->_eventDispatcher->addEventListenerWithSceneGraphPriority(eventListener, sprite);
 	this->scheduleUpdate();
 	return true;
@@ -624,7 +632,9 @@ void MoverRata::updateKinematic(MySprite* chara, float time, SteeringOutput stee
 			chara->sprite->getPositionX() + aux > 0 && chara->sprite->getPositionY() + auxy > 0) {
 			chara->sprite->setPosition3D(chara->sprite->getPosition3D() + *chara->velocity * time);
 		}
+		//if (abs(chara->sprite->getRotation() - steer.angular) > 0.2) {
 		chara->sprite->setRotation(chara->sprite->getRotation() + steer.angular * 1 * time);
+		//}
 		if (chara->sprite->getPositionZ() > 0) {
 			chara->velocity->z -= 10;
 		}
@@ -637,23 +647,23 @@ void MoverRata::updateKinematic(MySprite* chara, float time, SteeringOutput stee
 void MoverRata::updateDynamic(MySprite* chara, float time, SteeringOutput steer) {
 	if (steer.linear.length() > 0) {
 		float aux = chara->velocity->x * time, auxy = chara->velocity->y * time;
-		CCLOG(" hola %f", steer.linear.length() );
+		//CCLOG(" hola %f", steer.linear.length() );
 		if (chara->sprite->getPositionX() + aux <= this->getContentSize().width + 5 && chara->sprite->getPositionY() + auxy <= this->getContentSize().height + 5 && \
 			chara->sprite->getPositionX() + aux > 0 && chara->sprite->getPositionY() + auxy > 0) {
 
 			chara->sprite->setPosition3D(chara->sprite->getPosition3D() + *chara->velocity * time);
 		}
-		
+
 		chara->velocity->set(steer.linear * time + *chara->velocity);
 		chara->rotation += steer.angular * time;
 		if (chara->velocity->length() > chara->maxSpeed) {
 			chara->velocity->normalize();
 			chara->velocity->set(*chara->velocity * chara->maxSpeed);
 		}
-		
+
 	}
 	if (steer.angular != 0) {
-		CCLOG(" holas %f", steer.angular);
+		//CCLOG(" holas %f", steer.angular);
 		chara->sprite->setRotation(time * steer.angular + chara->sprite->getRotation());
 	}
 	if (chara->sprite->getPositionZ() > 0) {
@@ -667,47 +677,10 @@ void MoverRata::updateDynamic(MySprite* chara, float time, SteeringOutput steer)
 }
 
 void MoverRata::update(float delta) {
-	/*Pursue pursue;
-	Evade evade;
-	BlendedSteering blend;
-	SteeringOutput salida;
-	salida.linear.setZero();
-	salida.angular = 0;
-	blend.maxAngular = 0;
-	std::vector<std::pair< SteeringBehavior*, float >> comportamientos;
-	pursue.character = myS1;
-	pursue.target = myS;
-	evade.character = myS;
-	evade.target = myS1;
 	
-	comportamientos.push_back(std::make_pair<SteeringBehavior*, float>(&evade, 1));
-	blend.dic = comportamientos;
-	salida = blend.getSteering();
-	this->updateDynamic(myS1, delta, pursue.getSteering());
-	this->updateDynamic(myS, delta, salida);
-	
+	//#########################FLOCK########################//
 
-	Pursue pursue;
-	pursue.character = myS3;
-	pursue.target = myS;
-	this->updateDynamic(myS3, delta, pursue.getSteering());
-	
-	//LookWhereYoureGoing look;
-	//look.target = myS;
-	//look.character = myS1;
-	//look.character->velocity->set(1, 1, 1);
-	
-	
-	/*ArriveD arrive;
-	ArriveD arrive2;
-	arrive2.character = myS1;
-	arrive2.target = myS;
-	arrive.character = myS2;
-	arrive.target = myS;
-	this->updateDynamic(myS2, delta, arrive.getSteering());
-	this->updateDynamic(myS1, delta, arrive2.getSteering());*/
-	
-	// Flock
+	//Seeks para el flock, el flock se mueve hace el jugador
 	SeekD seek1, seek2, seek3;
 	seek1.character = myS1;
 	seek2.character = myS2;
@@ -743,8 +716,8 @@ void MoverRata::update(float delta) {
 	targ2.push_back(myS1);
 	targ2.push_back(myS3);
 
-	//targ3.push_back(myS1);
-	//targ3.push_back(myS2);
+	targ3.push_back(myS1);
+	targ3.push_back(myS2);
 	targ3.push_back(myS);
 
 	sep1.targets = targ1;
@@ -783,4 +756,43 @@ void MoverRata::update(float delta) {
 	this->updateDynamic(myS1, delta, blend1.getSteering());
 	this->updateDynamic(myS2, delta, blend2.getSteering());
 	this->updateDynamic(myS3, delta, blend3.getSteering());
+	
+	//#########################FLOCK########################//
+	
+	/*
+	//#########################ARRIVE########################//
+	ArriveD arrive;
+	arrive.character = myS1;
+	arrive.target = myS;
+	this->updateDynamic(myS1, delta, arrive.getSteering());
+	//#########################ARRIVE########################//
+	*/
+	/*
+	//#########################Arrive, look where you're going and collision avoidance########################//
+	
+	LookWhereYoureGoing look;
+	ArriveD arrive;
+	CollisionAvoidance avoid;
+	BlendedSteering blend;
+	std::vector<MySprite*> aux;
+	std::vector<std::pair<SteeringBehavior*, float>> mezcla;
+	look.character = myS1;
+	arrive.character = myS1;
+	arrive.target = myS;
+	avoid.character = myS1;
+
+	aux.push_back(myS2);
+	aux.push_back(myS3);
+
+	avoid.targets = aux;
+	avoid.radiusColl = 10;
+
+	
+	mezcla.push_back(std::make_pair<SteeringBehavior*, float>(&arrive, 1));
+	mezcla.push_back(std::make_pair<SteeringBehavior*, float>(&avoid, 1));
+	mezcla.push_back(std::make_pair<SteeringBehavior*, float>(&look, 1));
+	blend.dic = mezcla;
+
+	this->updateDynamic(myS1, delta, blend.getSteering());
+	*/
 }

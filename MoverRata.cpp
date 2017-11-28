@@ -3,6 +3,9 @@
 #include <iostream>
 #include <stdlib.h>
 #include "math.h"
+#include "Nodo.h"
+#include <fstream>
+#include <sstream>
 #define COCOS2D_DEBUG 1
 
 USING_NS_CC;
@@ -445,8 +448,8 @@ public:
 		}
 
 		if (firstMinSeparation <= 0 || firstDistance < 2 * radiusColl) {
-			relativePos.x = firstTarget->sprite->getPosition3D().x - character->sprite->getPosition3D().x;
-			relativePos.y = firstTarget->sprite->getPosition3D().y - character->sprite->getPosition3D().y;
+relativePos.x = firstTarget->sprite->getPosition3D().x - character->sprite->getPosition3D().x;
+relativePos.y = firstTarget->sprite->getPosition3D().y - character->sprite->getPosition3D().y;
 		}
 		else {
 			relativePos = firstRelativePos + firstRelativeVel * timeToCollision;
@@ -501,6 +504,22 @@ public:
 	MySprite* character;
 public:
 	SteeringOutput getSteering() {
+		/*SeekD arrive;
+		Face face;
+
+		face.target = target;
+		face.character = character;
+
+		arrive.target = target;
+		arrive.character = character;
+		character->maxAngular = 80;
+
+		SteeringOutput faces = face.getSteering();
+		SteeringOutput blending = arrive.getSteering();
+
+		blending.angular = faces.angular;
+		return blending;*/
+
 		SteeringOutput steering;
 		Align align;
 		MySprite* myTarget = MySprite::create();
@@ -518,6 +537,40 @@ public:
 	}
 };
 
+class PathFollowing : public SteeringBehavior {
+public:
+	MySprite* character;
+	std::vector<Vec2> camino;
+
+	SteeringOutput getSteering() {
+		SteeringOutput salida;
+		if (!camino.empty()) {
+			CCLOG("YEPA");
+			Vec2 actual = camino.back();
+			ArriveD seek;
+			MySprite* aux = MySprite::create();
+			aux->sprite = Sprite::create();
+			seek.character = character;
+			if (actual.distance(character->sprite->getPosition()) < 35) {
+				CCLOG("YUPA");
+				camino.pop_back();
+				if (!camino.empty()) {
+					actual = camino.back();
+				}
+			}
+			aux->sprite->setPosition(actual);
+			seek.target = aux;
+			return seek.getSteering();
+				
+
+			}
+			else {
+				return salida;
+			}
+		}
+};
+
+
 Scene* MoverRata::createScene()
 {
 	auto scene = Scene::create();
@@ -532,13 +585,134 @@ bool MoverRata::init()
 		return false;
 	}
 
-	mapa = cocos2d::Sprite::create("newmap.png");
-	mapa->setPosition(this->getContentSize().width / 2, this->getContentSize().height / 2);
-	mapa->setRotation(0);
-	this->addChild(mapa);
+	std::unordered_map<std::string, std::vector<std::string>> adyancencias;
+	adyancencias["53.3333333333,806.0"] = { "26.6666666667,693.333333333","130.0,758.0","26.6666666667,918.666666667" };
+	adyancencias["568.0,335.0"] = { "689.0,400.0","436.0,346.333333333","589.333333333,233.666666667" };
+	adyancencias["470.666666667,843.333333333"] = { "414.333333333,723.666666667","398.666666667,956.0" };
+	adyancencias["168.666666667,223.666666667"] = { "223.0,278.666666667","243.333333333,111.0","57.6666666667,259.0" };
+	adyancencias["893.0,758.666666667"] = { "720.333333333,741.333333333","962.333333333,721.333333333","954.666666667,865.333333333" };
+	adyancencias["720.333333333,741.333333333"] = { "893.0,758.666666667","643.666666667,795.0","792.333333333,618.666666667" };
+	adyancencias["497.0,107.333333333"] = { "385.0,59.3333333333","644.333333333,48.0","485.0,191.666666667" };
+	adyancencias["923.666666667,354.0"] = { "995.666666667,423.333333333","862.0,400.0","952.0,204.666666667" };
+	adyancencias["132.333333333,51.6666666667"] = { "243.333333333,111.0","29.0,146.333333333" };
+	adyancencias["306.0,903.333333333"] = { "196.666666667,918.666666667","398.666666667,956.0","292.0,796.666666667" };
+	adyancencias["223.0,278.666666667"] = { "168.666666667,223.666666667","353.0,250.333333333" };
+	adyancencias["660.0,633.333333333"] = { "594.333333333,659.666666667","661.333333333,554.0" };
+	adyancencias["103.333333333,639.333333333"] = { "130.0,758.0","26.6666666667,693.333333333","155.0,558.333333333" };
+	adyancencias["735.666666667,533.333333333"] = { "792.333333333,618.666666667","661.333333333,554.0","689.0,400.0" };
+	adyancencias["325.0,729.666666667"] = { "266.0,610.0","292.0,796.666666667","414.333333333,723.666666667" };
+	adyancencias["995.666666667,423.333333333"] = { "923.666666667,354.0","967.333333333,522.333333333" };
+	adyancencias["130.0,758.0"] = { "103.333333333,639.333333333","180.0,806.0","53.3333333333,806.0" };
+	adyancencias["118.666666667,971.333333333"] = { "196.666666667,918.666666667","26.6666666667,918.666666667" };
+	adyancencias["196.666666667,918.666666667"] = { "306.0,903.333333333","118.666666667,971.333333333" };
+	adyancencias["243.333333333,111.0"] = { "168.666666667,223.666666667","385.0,59.3333333333","132.333333333,51.6666666667" };
+	adyancencias["661.333333333,554.0"] = { "623.666666667,501.0","735.666666667,533.333333333","660.0,633.333333333" };
+	adyancencias["398.666666667,956.0"] = { "306.0,903.333333333","470.666666667,843.333333333" };
+	adyancencias["862.0,400.0"] = { "923.666666667,354.0","764.333333333,352.0","903.0,501.0" };
+	adyancencias["689.0,400.0"] = { "568.0,335.0","764.333333333,352.0","623.666666667,501.0","735.666666667,533.333333333" };
+	adyancencias["385.0,59.3333333333"] = { "243.333333333,111.0","497.0,107.333333333" };
+	adyancencias["754.0,197.333333333"] = { "700.0,250.666666667" };
+	adyancencias["436.0,346.333333333"] = { "568.0,335.0","325.333333333,303.666666667","354.333333333,415.666666667" };
+	adyancencias["105.666666667,436.333333333"] = { "189.0,379.0","28.6666666667,377.333333333","155.0,558.333333333" };
+	adyancencias["871.666666667,954.666666667"] = { "733.333333333,891.666666667","954.666666667,865.333333333" };
+	adyancencias["881.333333333,149.333333333"] = { "952.0,204.666666667","870.333333333,48.0" };
+	adyancencias["266.0,610.0"] = { "325.0,729.666666667","155.0,558.333333333","382.0,577.666666667" };
+	adyancencias["623.666666667,501.0"] = { "661.333333333,554.0","689.0,400.0" };
+	adyancencias["632.0,961.0"] = { "733.333333333,891.666666667","542.333333333,854.333333333" };
+	adyancencias["353.0,250.333333333"] = { "223.0,278.666666667","485.0,191.666666667","325.333333333,303.666666667" };
+	adyancencias["589.333333333,233.666666667"] = { "568.0,335.0","485.0,191.666666667","700.0,250.666666667" };
+	adyancencias["180.0,806.0"] = { "130.0,758.0" };
+	adyancencias["903.0,501.0"] = { "871.0,580.333333333","862.0,400.0" };
+	adyancencias["57.6666666667,259.0"] = { "168.666666667,223.666666667","28.6666666667,377.333333333","29.0,146.333333333" };
+	adyancencias["189.0,379.0"] = { "354.333333333,415.666666667","105.666666667,436.333333333" };
+	adyancencias["952.0,204.666666667"] = { "923.666666667,354.0","881.333333333,149.333333333" };
+	adyancencias["995.666666667,575.333333333"] = { "967.333333333,522.333333333" };
+	adyancencias["644.333333333,48.0"] = { "497.0,107.333333333","744.333333333,96.0" };
+	adyancencias["485.0,191.666666667"] = { "497.0,107.333333333","589.333333333,233.666666667","353.0,250.333333333" };
+	adyancencias["594.333333333,659.666666667"] = { "660.0,633.333333333","472.333333333,652.666666667" };
+	adyancencias["700.0,250.666666667"] = { "754.0,197.333333333","589.333333333,233.666666667","764.333333333,352.0" };
+	adyancencias["994.333333333,633.333333333"] = { "932.0,659.666666667","995.666666667,575.333333333" };
+	adyancencias["870.333333333,48.0"] = { "881.333333333,149.333333333","744.333333333,96.0" };
+	adyancencias["28.6666666667,377.333333333"] = { "105.666666667,436.333333333","57.6666666667,259.0" };
+	adyancencias["472.333333333,652.666666667"] = { "594.333333333,659.666666667","414.333333333,723.666666667","382.0,577.666666667" };
+	adyancencias["29.0,146.333333333"] = { "57.6666666667,259.0","132.333333333,51.6666666667" };
+	adyancencias["292.0,796.666666667"] = { "306.0,903.333333333","325.0,729.666666667" };
+	adyancencias["155.0,558.333333333"] = { "105.666666667,436.333333333","266.0,610.0","103.333333333,639.333333333" };
+	adyancencias["325.333333333,303.666666667"] = { "436.0,346.333333333","353.0,250.333333333" };
+	adyancencias["733.333333333,891.666666667"] = { "871.666666667,954.666666667","632.0,961.0","643.666666667,795.0" };
+	adyancencias["26.6666666667,918.666666667"] = { "118.666666667,971.333333333","53.3333333333,806.0" };
+	adyancencias["962.333333333,721.333333333"] = { "893.0,758.666666667" };
+	adyancencias["542.333333333,854.333333333"] = { "632.0,961.0","643.666666667,795.0" };
+	adyancencias["792.333333333,618.666666667"] = { "735.666666667,533.333333333","871.0,580.3333333333334","643.666666667,795.0" };
+	adyancencias["954.666666667,865.333333333"] = { "893.0,758.666666667","871.666666667,954.666666667" };
+	adyancencias["354.333333333,415.666666667"] = { "436.0,346.333333333","189.0,379.0","465.0,505.333333333" };
+	adyancencias["871.0,580.333333333"] = { "903.0,501.0","792.333333333,618.666666667","932.0,659.666666667" };
+	adyancencias["414.333333333,723.666666667"] = { "470.666666667,843.333333333","325.0,729.666666667","472.333333333,652.666666667" };
+	adyancencias["764.333333333,352.0"] = { "862.0,400.0","689.0,400.0","700.0,250.666666667" };
+	adyancencias["382.0,577.666666667"] = { "266.0,610.0","472.333333333,652.666666667","465.0,505.333333333" };
+	adyancencias["465.0,505.333333333"] = { "354.333333333,415.666666667","382.0,577.666666667" };
+	adyancencias["643.666666667,795.0"] = { "720.333333333,741.333333333","542.333333333,854.333333333","733.333333333,891.666666667" };
+	adyancencias["26.6666666667,693.333333333"] = { "53.3333333333,806.0","103.333333333,639.333333333" };
+	adyancencias["932.0,659.666666667"] = { "994.333333333,633.333333333","871.0,580.333333333" };
+	adyancencias["744.333333333,96.0"] = { "644.333333333,48.0","870.333333333,48.0" };
+	adyancencias["967.333333333,522.333333333"] = { "995.666666667,423.333333333","995.666666667,575.333333333" };
+
+
+
+
+	
+
+	
+	Nodo nodo = Nodo("871.666666667,954.666666667", Vec2(871.666666667, 954.666666667), NULL, 0, 0);
+	CCLOG("aaargo %s", nodo.state.c_str());
+	nodo.adyacencias = adyancencias;
+	Nodo meta = Nodo("26.6666666667,918.666666667", Vec2(26.6666666667, 918.666666667), NULL, 0, 0);
+	Nodo solucion = nodo.a_estrella(meta);
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	//mapa = cocos2d::Sprite::create("newmap.png");
+	//mapa->setPosition(this->getContentSize().width / 2, this->getContentSize().height / 2);
+	//mapa->setRotation(0);
+	//this->addChild(mapa);
 
 	sprite = Sprite::create("perritoa.png");
 	myS = MySprite::create();
+	//PRUEBA CREAR MÁQUINA DE ESTADOS
+	std::vector<State> states;
+	State pastando;
+	State::Transition prueba2;
+	prueba2.isTriggered = []() { return false; };
+	std::function<int()> prueba1 = []() { return 1; };
+	pastando.getAction = prueba1;
+	states.push_back(pastando);
+
+	myS->maquina->states = states;
+	myS->maquina->currentState = pastando;
+
+
+	//PRUEBA CREAR MÁQUINA DE ESTADOS
 	myS->velocity = new Vec3(0, 0, 0);
 	myS->sprite = sprite;
 	myS->acceleration = 20;
@@ -587,6 +761,11 @@ bool MoverRata::init()
 	myS3->maxAngular = 30;
 	myS3->maxRotation = 30;
 	sprite3->setPosition(this->getContentSize().width / 3, this->getContentSize().height / 3);
+	sprite3->setPosition(40, 918.5);
+	myS3->camino = solucion.camino1();
+	CCLOG("%f esto esta pasando que loco", solucion.g);
+
+
 	this->addChild(sprite3, 0);
 
 	auto eventListener = EventListenerKeyboard::create();
@@ -677,9 +856,9 @@ void MoverRata::updateDynamic(MySprite* chara, float time, SteeringOutput steer)
 }
 
 void MoverRata::update(float delta) {
-	
-	//#########################FLOCK########################//
 
+	//#########################FLOCK########################//
+	/*
 	//Seeks para el flock, el flock se mueve hace el jugador
 	SeekD seek1, seek2, seek3;
 	seek1.character = myS1;
@@ -756,20 +935,18 @@ void MoverRata::update(float delta) {
 	this->updateDynamic(myS1, delta, blend1.getSteering());
 	this->updateDynamic(myS2, delta, blend2.getSteering());
 	this->updateDynamic(myS3, delta, blend3.getSteering());
-	
+	*/
 	//#########################FLOCK########################//
-	
-	/*
+
 	//#########################ARRIVE########################//
+	/*
 	ArriveD arrive;
 	arrive.character = myS1;
 	arrive.target = myS;
 	this->updateDynamic(myS1, delta, arrive.getSteering());
 	//#########################ARRIVE########################//
 	*/
-	/*
 	//#########################Arrive, look where you're going and collision avoidance########################//
-	
 	LookWhereYoureGoing look;
 	ArriveD arrive;
 	CollisionAvoidance avoid;
@@ -787,12 +964,21 @@ void MoverRata::update(float delta) {
 	avoid.targets = aux;
 	avoid.radiusColl = 10;
 
-	
+
 	mezcla.push_back(std::make_pair<SteeringBehavior*, float>(&arrive, 1));
 	mezcla.push_back(std::make_pair<SteeringBehavior*, float>(&avoid, 1));
 	mezcla.push_back(std::make_pair<SteeringBehavior*, float>(&look, 1));
 	blend.dic = mezcla;
 
 	this->updateDynamic(myS1, delta, blend.getSteering());
-	*/
+	PathFollowing path;
+	path.character = myS3;
+	path.camino = myS3->camino;
+	this->updateDynamic(myS3, delta, path.getSteering());
+	//std::vector<int> prueba;
+	//prueba.push_back(1);
+	//std::vector<int> prueba1 = prueba;
+	//prueba1.push_back(1);
+	//CCLOG("1 2 %d %d", prueba.size(), prueba1.size());
+	//CCLOG(" hola %f %f", myS->sprite->getPosition().x, myS->sprite->getPosition().y );
 }

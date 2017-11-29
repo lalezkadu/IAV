@@ -44,7 +44,6 @@ public:
 			CCLOG("%s vs ", actual.state.c_str());
 			CCLOG("SI EXPANDO");
 			if (actual.state.compare(meta.state) == 0) {
-				
 				return actual;
 			}
 			cerrados[actual.state] = actual.g;

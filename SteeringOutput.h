@@ -6,5 +6,5 @@ USING_NS_CC;
 class SteeringOutput {
 public:
 	Vec3 linear;
-	float angular;
+	float angular = 0;
 };
